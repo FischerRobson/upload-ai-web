@@ -3,8 +3,13 @@ import { Button } from './components/ui/button'
 import { Separator } from './components/ui/separator'
 import { Textarea } from './components/ui/textarea'
 import { Label } from './components/ui/label'
-import { Select, SelectTrigger } from './components/ui/select'
-import { SelectContent, SelectItem, SelectValue } from '@radix-ui/react-select'
+import {
+  Select,
+  SelectTrigger,
+  SelectItem,
+  SelectValue,
+  SelectContent,
+} from './components/ui/select'
 import { Slider } from './components/ui/slider'
 
 export function App() {
