@@ -6,9 +6,31 @@ import { Label } from '../ui/label'
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from 'react'
 import { loadFFmpeg } from '@/lib/ffmpeg'
 import { fetchFile } from '@ffmpeg/util'
+import { api } from '@/lib/api'
+import { useAtom } from 'jotai'
+import { videoIdAtom } from '@/lib/atoms'
+
+const StatusValues = {
+  WAITING: 'WAITING',
+  CONVERTING: 'CONVERTING',
+  UPLOADING: 'UPLOADING',
+  GENERATING: 'GENERATING',
+  SUCCESS: 'SUCCESS',
+} as const
+
+type Status = keyof typeof StatusValues
+
+const StatusMessage = {
+  CONVERTING: 'Convertendo...',
+  GENERATING: 'Transcrevendo...',
+  UPLOADING: ' Carregando...',
+  SUCCESS: 'Sucesso!',
+}
 
 export function VideoForm() {
   const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [status, setStatus] = useState<Status>(StatusValues.WAITING)
+  const [_, setVideoId] = useAtom(videoIdAtom)
   const promptInputRef = useRef<HTMLTextAreaElement>(null)
 
   function handleVideoInput(event: ChangeEvent<HTMLInputElement>) {
@@ -66,7 +88,29 @@ export function VideoForm() {
 
     const prompt = promptInputRef.current?.value
 
+    setStatus(StatusValues.CONVERTING)
+
     const audioFile = await convertVideoToAudio(videoFile)
+
+    const formData = new FormData()
+
+    formData.append('file', audioFile)
+
+    setStatus(StatusValues.UPLOADING)
+
+    const response = await api.post('/videos', formData)
+
+    const videoId = response.data.id
+
+    setStatus(StatusValues.GENERATING)
+
+    const transcription = await api.post(`/videos/${videoId}/transcription`, {
+      prompt,
+    })
+
+    setStatus(StatusValues.SUCCESS)
+
+    setVideoId(videoId)
   }
 
   return (
@@ -102,13 +146,25 @@ export function VideoForm() {
         <Label htmlFor="transcription_prompt">Prompt de transcrição</Label>
         <Textarea
           ref={promptInputRef}
+          disabled={status !== StatusValues.WAITING}
           id="transcription_prompt"
           className="min-h-[64px] leading-relaxed"
           placeholder="Inclua palavras chave mencionadas no video separadas por virgula (,)"
         />
-        <Button type="submit" className="w-full">
-          Carregar Video
-          <Upload className="ml-2 h-4 w-4" />
+        <Button
+          data-success={status === StatusValues.SUCCESS}
+          disabled={status !== StatusValues.WAITING}
+          type="submit"
+          className="w-full data-[success=true]:bg-emerald-400"
+        >
+          {status === StatusValues.WAITING ? (
+            <>
+              Carregar Video
+              <Upload className="ml-2 h-4 w-4" />
+            </>
+          ) : (
+            StatusMessage[status]
+          )}
         </Button>
       </div>
     </form>

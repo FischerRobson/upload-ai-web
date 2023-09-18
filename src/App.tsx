@@ -1,8 +1,19 @@
 import { Textarea } from './components/ui/textarea'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
+import { useAtom } from 'jotai'
+import { templateAtom, videoIdAtom } from './lib/atoms'
+import { useCompletion } from 'ai/react'
 
 export function App() {
+  const [template] = useAtom(templateAtom)
+  const [videoId] = useAtom(videoIdAtom)
+
+  const completion = useCompletion({
+    api: 'http://localhost:3333',
+    body: { videoId, temperature: 0, template },
+  })
+
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -15,6 +26,7 @@ export function App() {
             <Textarea
               className="resize-none p-4 leading-relaxed"
               placeholder="Inclua um prompt para a IA..."
+              value={template}
             />
             <Textarea
               className="resize-none p-4 leading-relaxed"
